@@ -30,13 +30,13 @@ Vehicle (Interface)
  2)   **Bike**
 
 ParkingSlot
-    **Holds one Vehicle object**
+-**Holds one Vehicle object**
 
 ParkingLot (Singleton)
-     **Manages 10 ParkingSlot objects + revenue tracking**
+-**Manages 10 ParkingSlot objects + revenue tracking**
 
 SmartParkingSystemGUI (JFrame)
-     **Interacts with ParkingLot instance**
+-**Interacts with ParkingLot instance**
 
 
 ## Technologies Used
