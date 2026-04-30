@@ -1,0 +1,218 @@
+import javax.swing.*;
+import javax.swing.border.*;
+import java.awt.*;
+
+interface Vehicle {
+    String getType();
+    String getLicensePlate();
+    double getFee();
+}
+
+class Car implements Vehicle {
+    private String plate;
+    public Car(String plate) { this.plate = plate; }
+    public String getType() { return "Car"; }
+    public String getLicensePlate() { return plate; }
+    public double getFee() { return 50.0; }
+}
+
+class Bike implements Vehicle {
+    private String plate;
+    public Bike(String plate) { this.plate = plate; }
+    public String getType() { return "Bike"; }
+    public String getLicensePlate() { return plate; }
+    public double getFee() { return 20.0; }
+}
+
+class ParkingSlot {
+    private int number;
+    private Vehicle vehicle;
+    public ParkingSlot(int n) {
+        number = n;
+        vehicle = null;
+    }
+    public int getNumber() { return number; }
+    public boolean isAvailable() { return vehicle == null; }
+    public Vehicle getVehicle() { return vehicle; }
+    public void park(Vehicle v) { vehicle = v; }
+    public Vehicle remove() {
+        Vehicle v = vehicle;
+        vehicle = null;
+        return v;
+    }
+}
+
+class ParkingLot {
+    private static ParkingLot instance;
+    private ParkingSlot[] slots;
+    private double revenue;
+    private ParkingLot() {
+        slots = new ParkingSlot[10];
+        for (int i = 0; i < 10; i++) slots[i] = new ParkingSlot(i + 1);
+        revenue = 0;
+    }
+    public static ParkingLot getInstance() {
+        if (instance == null) instance = new ParkingLot();
+        return instance;
+    }
+    public ParkingSlot[] getSlots() { return slots; }
+    public double getRevenue() { return revenue; }
+    public boolean isDuplicate(String plate) {
+        for (ParkingSlot s : slots)
+            if (!s.isAvailable() && s.getVehicle().getLicensePlate().equalsIgnoreCase(plate))
+                return true;
+        return false;
+    }
+    public boolean park(Vehicle v) {
+        if (isDuplicate(v.getLicensePlate())) return false;
+        for (ParkingSlot s : slots) {
+            if (s.isAvailable()) {
+                s.park(v);
+                return true;
+            }
+        }
+        return false;
+    }
+    public Vehicle remove(int slot) {
+        if (slot < 1 || slot > 10) return null;
+        ParkingSlot s = slots[slot - 1];
+        if (s.isAvailable()) return null;
+        Vehicle v = s.remove();
+        revenue += v.getFee();
+        return v;
+    }
+}
+
+public class SmartParkingSystemGUI extends JFrame {
+    private ParkingLot lot;
+    private JTextField plateField;
+    private JTextField slotField;
+    private JPanel gridPanel;
+    private JLabel revenueLabel;
+
+    public SmartParkingSystemGUI() {
+        lot = ParkingLot.getInstance();
+        setTitle("Smart Parking System – Dashboard");
+        setSize(1100, 650);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10,10));
+        add(createHeader(), BorderLayout.NORTH);
+        add(createLeftPanel(), BorderLayout.WEST);
+        add(createGridPanel(), BorderLayout.CENTER);
+        add(createFooter(), BorderLayout.SOUTH);
+        refreshGrid();
+        setVisible(true);
+    }
+
+    private JPanel createHeader() {
+        JPanel p = new JPanel();
+        p.setBackground(new Color(44, 62, 80));
+        p.setBorder(new EmptyBorder(15,15,15,15));
+        JLabel t = new JLabel("SMART PARKING LOT MANAGEMENT SYSTEM");
+        t.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        t.setForeground(Color.WHITE);
+        p.add(t);
+        return p;
+    }
+
+    private JPanel createLeftPanel() {
+        JPanel p = new JPanel();
+        p.setPreferredSize(new Dimension(300, 0));
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setBorder(new TitledBorder("Controls"));
+        plateField = new JTextField(15);
+        slotField = new JTextField(5);
+        JButton carBtn = new JButton("Park Car");
+        JButton bikeBtn = new JButton("Park Bike");
+        JButton removeBtn = new JButton("Remove Vehicle");
+        JButton revenueBtn = new JButton("Show Revenue");
+        p.add(new JLabel("License Plate:"));
+        p.add(plateField);
+        p.add(Box.createVerticalStrut(10));
+        p.add(carBtn);
+        p.add(bikeBtn);
+        p.add(Box.createVerticalStrut(20));
+        p.add(new JLabel("Slot Number:"));
+        p.add(slotField);
+        p.add(removeBtn);
+        p.add(Box.createVerticalStrut(20));
+        p.add(revenueBtn);
+        carBtn.addActionListener(e -> parkVehicle("Car"));
+        bikeBtn.addActionListener(e -> parkVehicle("Bike"));
+        removeBtn.addActionListener(e -> removeVehicle());
+        revenueBtn.addActionListener(e -> showRevenue());
+        return p;
+    }
+
+    private JPanel createGridPanel() {
+        gridPanel = new JPanel(new GridLayout(2,5,10,10));
+        gridPanel.setBorder(new TitledBorder("Parking Slots"));
+        return gridPanel;
+    }
+
+    private JPanel createFooter() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(new Color(236, 240, 241));
+        revenueLabel = new JLabel("Total Revenue: 0 PKR");
+        revenueLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        p.add(revenueLabel, BorderLayout.EAST);
+        return p;
+    }
+
+    private void parkVehicle(String type) {
+        String plate = plateField.getText().trim();
+        if (plate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter license plate");
+            return;
+        }
+        Vehicle v = type.equals("Car") ? new Car(plate) : new Bike(plate);
+        if (!lot.park(v)) {
+            JOptionPane.showMessageDialog(this, "Duplicate plate or no slot available");
+        }
+        refreshGrid();
+    }
+
+    private void removeVehicle() {
+        try {
+            int slot = Integer.parseInt(slotField.getText());
+            Vehicle v = lot.remove(slot);
+            if (v == null) JOptionPane.showMessageDialog(this, "Invalid or empty slot");
+            else JOptionPane.showMessageDialog(this,
+                v.getType() + " removed. Fee added: " + v.getFee() + " PKR");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Enter valid slot number");
+        }
+        refreshGrid();
+    }
+
+    private void showRevenue() {
+        JOptionPane.showMessageDialog(this, "Total Revenue: " + lot.getRevenue() + " PKR");
+    }
+
+    private void refreshGrid() {
+        gridPanel.removeAll();
+        for (ParkingSlot s : lot.getSlots()) {
+            JPanel box = new JPanel(new BorderLayout());
+            box.setBorder(new LineBorder(Color.GRAY));
+            JLabel label;
+            if (s.isAvailable()) {
+                label = new JLabel("Slot " + s.getNumber() + " Available", SwingConstants.CENTER);
+                box.setBackground(new Color(46, 204, 113));
+            } else {
+                Vehicle v = s.getVehicle();
+                label = new JLabel("Slot " + s.getNumber() + " " + v.getType() + " " + v.getLicensePlate(), SwingConstants.CENTER);
+                box.setBackground(new Color(231, 76, 60));
+            }
+            box.add(label);
+            gridPanel.add(box);
+        }
+        revenueLabel.setText("Total Revenue: " + lot.getRevenue() + " PKR");
+        gridPanel.revalidate();
+        gridPanel.repaint();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(SmartParkingSystemGUI::new);
+    }
+}
