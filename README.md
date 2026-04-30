@@ -26,8 +26,8 @@ A Java-based desktop application that automates and streamlines parking facility
 
 Vehicle (Interface)
 
-  **Car**
-    **Bike**
+ 1) **Car**
+ 2)   **Bike**
 
 ParkingSlot
     **Holds one Vehicle object**
